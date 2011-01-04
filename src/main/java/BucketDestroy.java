@@ -21,7 +21,7 @@ import com.amazonaws.services.s3.model.VersionListing;
  * 
  * Launching:
  * 
- * $java -Daws.key=AK7895IH1234X2GW12IQ -Daws.secret=1234567890123456789012345678901234456789 BucketDestory "bucketName"
+ * $java -Daws.key=AK7895IH1234X2GW12IQ -Daws.secret=1234567890123456789012345678901234456789 BucketDestroy "bucketName"
 
  * @author Maxim Veksler <maxim@vekslers.org>
  * @author Mark S. Kolich http://mark.koli.ch/2010/09/recursively-deleting-large-amazon-s3-buckets.html
