@@ -2,12 +2,10 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.model.BucketVersioningConfiguration;
 import com.amazonaws.services.s3.model.DeleteVersionRequest;
 import com.amazonaws.services.s3.model.S3VersionSummary;
 import com.amazonaws.services.s3.model.VersionListing;
@@ -39,13 +37,13 @@ public class BucketDestroy {
 		final String accessKey = System.getProperty(AWS_ACCESS_KEY_PROPERTY);
 		final String secret = System.getProperty(AWS_SECRET_PROPERTY);
 		if (accessKey == null || secret == null) {
-			throw new IllegalArgumentException("You're missing the "
-					+ "-Daws.key and -Daws.secret required VM properties.");
+			System.err.println("You're missing the -Daws.key and -Daws.secret required VM properties.");
+			System.exit(100);
 		}
 
 		if (args.length < 1) {
-			throw new IllegalArgumentException("Missing required "
-					+ "program argument: bucketName.");
+			System.err.println("Missing required program argument: bucketName.");
+			System.exit(100);
 		}
 		
 		// S3 Initialization
@@ -100,18 +98,18 @@ public class BucketDestroy {
 						}
 					}
 				});
-				
-				try {
-					// We wait until Latch reaches zero, this allows to not over 
-					// populate ExecutorService tasks queue. 
-					latch.await();
-				} catch (Exception exception) {
-				}
-
-				// Paging over all S3 keys...
-				versionListing = s3.listNextBatchOfVersions(versionListing);
-				versionSummaries = versionListing.getVersionSummaries();
 			}
+			
+			// After sending current batch of delete tasks we block until Latch reaches zero, this 
+			// allows to not over populate ExecutorService tasks queue. 
+			try {
+				latch.await();
+			} catch (Exception exception) {
+			}
+
+			// Paging over all S3 keys...
+			versionListing = s3.listNextBatchOfVersions(versionListing);
+			versionSummaries = versionListing.getVersionSummaries();
 			
 		}
 		
@@ -123,13 +121,8 @@ public class BucketDestroy {
 //			s3.setBucketVersioningConfiguration(setBucketVersioningConfigurationRequest);
 			// So we do this:
 			s3.deleteBucket(bucketName);
-			TimeUnit.SECONDS.sleep(10);
-			s3.createBucket(bucketName);
-
-			// Report versioning status of bucket
-			BucketVersioningConfiguration bucketVersioningConfiguration = s3.getBucketVersioningConfiguration(bucketName);
-			System.out.println(bucketName + " versioning: " + bucketVersioningConfiguration.getStatus());
-		} catch (Exception e) {
+			System.out.println(">>>>   INFO: bucket " + bucketName + " deleted!");
+		} catch (Exception e) { 
 			System.err.println("Failed to ultimately delete bucket: " + bucketName);
 			e.printStackTrace();
 		}
